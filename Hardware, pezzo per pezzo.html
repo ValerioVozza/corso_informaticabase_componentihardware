@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hardware, pezzo per pezzo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Sora:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF3FB; --bg2:#E2EAF7; --panel:#FFFFFF; --line:#B9C8E2; --ink:#0E1A33; --muted:#4A5B7C;
+  --cyan:#0077A8; --mag:#B0237A; --glow:0 0 0 transparent;
+  --c-int:#0077A8; --c-in:#B0237A; --c-out:#A35A00; --c-io:#6A3FC2; --c-arch:#1D7F4E; --c-port:#2D55C9; --c-net:#C2315A;
+  --grid:rgba(14,26,51,.06);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#060A1C; --bg2:#0B1230; --panel:#0D1536; --line:#22306A; --ink:#E4ECFF; --muted:#8C9BC8;
+    --cyan:#2EE6FF; --mag:#FF3DB8; --glow:0 0 18px;
+    --c-int:#2EE6FF; --c-in:#FF3DB8; --c-out:#FFB23E; --c-io:#A98BFF; --c-arch:#3DF5A0; --c-port:#5C8CFF; --c-net:#FF6B8B;
+    --grid:rgba(46,230,255,.06);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#060A1C; --bg2:#0B1230; --panel:#0D1536; --line:#22306A; --ink:#E4ECFF; --muted:#8C9BC8;
+  --cyan:#2EE6FF; --mag:#FF3DB8; --glow:0 0 18px;
+  --c-int:#2EE6FF; --c-in:#FF3DB8; --c-out:#FFB23E; --c-io:#A98BFF; --c-arch:#3DF5A0; --c-port:#5C8CFF; --c-net:#FF6B8B;
+  --grid:rgba(46,230,255,.06);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-behavior:smooth;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px)}
+body{
+  margin:0;min-height:100%;
+  background:
+    linear-gradient(var(--grid) 1px,transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/28px 28px,
+    var(--bg);
+  color:var(--ink);
+  font:400 1rem/1.6 "Sora",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+h1,h2,h3{font-family:"Chakra Petch","Segoe UI",system-ui,sans-serif;margin:0;line-height:1.1}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+
+/* Barra di navigazione */
+.bar{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:5;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.bar-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:1.25rem;padding:.7rem 1.25rem;overflow-x:auto;scrollbar-width:none}
+.bar-in::-webkit-scrollbar{display:none}
+.logo{font:700 1.05rem "Chakra Petch",sans-serif;white-space:nowrap;text-decoration:none;display:flex;align-items:center;gap:.5rem}
+.logo i{width:12px;height:12px;border:2px solid var(--cyan);display:inline-block;transform:rotate(45deg);box-shadow:var(--glow) var(--cyan)}
+.bar nav{display:flex;gap:.35rem;margin-left:auto}
+.bar nav a{
+  font:600 .85rem "Chakra Petch",sans-serif;text-decoration:none;white-space:nowrap;
+  padding:.35rem .7rem;border:1px solid transparent;color:var(--muted);
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+.bar nav a:hover{color:var(--ink);border-color:var(--line);background:var(--panel)}
+
+/* Hero */
+.hero{max-width:1180px;margin:0 auto;padding:4.5rem 1.25rem 3rem;display:grid;grid-template-columns:1fr 1.05fr;gap:3rem;align-items:center}
+.hero h1{font-size:clamp(2.6rem,6vw,4.6rem);font-weight:700;letter-spacing:-.01em}
+.hero p{color:var(--muted);max-width:44ch;font-size:1.08rem;margin:1.25rem 0 0}
+.hero .hint{margin-top:2rem;font-size:.9rem;color:var(--muted);display:flex;gap:.6rem;align-items:center}
+.hero .hint::before{content:"";width:28px;height:1px;background:var(--cyan)}
+
+/* Mappa a circuito */
+.board{position:relative;aspect-ratio:1;max-width:520px;width:100%;justify-self:center}
+.board svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.trace{fill:none;stroke-width:1.6;stroke-dasharray:420;stroke-dashoffset:420;animation:draw 1.4s ease-out forwards}
+.trace:nth-child(2){animation-delay:.1s}.trace:nth-child(3){animation-delay:.2s}.trace:nth-child(4){animation-delay:.3s}
+.trace:nth-child(5){animation-delay:.4s}.trace:nth-child(6){animation-delay:.5s}.trace:nth-child(7){animation-delay:.6s}
+.via{fill:var(--bg);stroke-width:1.6}
+@keyframes draw{to{stroke-dashoffset:0}}
+.cells{position:absolute;inset:0;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:2%}
+.chip{
+  margin:14%;display:flex;flex-direction:column;justify-content:flex-end;gap:.2rem;
+  padding:.7rem;text-decoration:none;position:relative;
+  background:var(--panel);border:1px solid var(--c);
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+  transition:transform .2s,background .2s;
+}
+.chip::before{content:"";position:absolute;top:.6rem;left:.7rem;width:8px;height:8px;background:var(--c);box-shadow:var(--glow) var(--c)}
+.chip b{font:600 clamp(.72rem,1.6vw,.95rem)/1.15 "Chakra Petch",sans-serif}
+.chip small{font-size:clamp(.62rem,1.2vw,.75rem);color:var(--muted)}
+.chip:hover{transform:translateY(-3px);background:color-mix(in srgb,var(--c) 12%,var(--panel))}
+.core{
+  margin:8%;display:grid;place-items:center;text-align:center;
+  border:2px solid var(--cyan);background:var(--bg2);
+  box-shadow:var(--glow) color-mix(in srgb,var(--cyan) 45%,transparent);
+  font:700 clamp(.85rem,2vw,1.2rem)/1.15 "Chakra Petch",sans-serif;
+  position:relative;
+}
+.core::after{content:"";position:absolute;inset:8px;border:1px dashed var(--line)}
+.note{margin:14%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(.65rem,1.3vw,.8rem);color:var(--muted);border:1px dashed var(--line)}
+
+/* Sezioni */
+main{max-width:1180px;margin:0 auto;padding:0 1.25rem 5rem}
+section{padding-top:3.5rem;border-top:1px solid var(--line);margin-top:2rem}
+.head{display:grid;grid-template-columns:auto 1fr;gap:.4rem 1.2rem;align-items:baseline;margin-bottom:1.75rem}
+.head h2{font-size:clamp(1.7rem,3.6vw,2.4rem);color:var(--ink);display:flex;align-items:center;gap:.8rem}
+.head h2::before{content:"";width:14px;height:14px;background:var(--c);transform:rotate(45deg);box-shadow:var(--glow) var(--c);flex:none}
+.head .count{font:600 .9rem "Chakra Petch",sans-serif;color:var(--c);justify-self:end}
+.head p{grid-column:1/-1;margin:0;color:var(--muted);max-width:62ch}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem}
+.card{
+  background:var(--panel);border:1px solid var(--line);position:relative;
+  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%);
+  display:flex;flex-direction:column;
+}
+.card::after{content:"";position:absolute;top:0;right:0;width:22.6px;height:1px;background:var(--line);transform-origin:right top;transform:rotate(45deg) translate(0,0)}
+.viewer{
+  aspect-ratio:4/3;position:relative;margin:.6rem .6rem 0;
+  background:
+    radial-gradient(circle at 50% 60%,color-mix(in srgb,var(--c) 16%,transparent),transparent 65%),
+    var(--bg2);
+  display:grid;place-items:center;
+}
+.viewer::before{
+  content:"";position:absolute;inset:10px;
+  background:
+    linear-gradient(var(--c),var(--c)) top left/14px 2px no-repeat,
+    linear-gradient(var(--c),var(--c)) top left/2px 14px no-repeat,
+    linear-gradient(var(--c),var(--c)) top right/14px 2px no-repeat,
+    linear-gradient(var(--c),var(--c)) top right/2px 14px no-repeat,
+    linear-gradient(var(--c),var(--c)) bottom left/14px 2px no-repeat,
+    linear-gradient(var(--c),var(--c)) bottom left/2px 14px no-repeat,
+    linear-gradient(var(--c),var(--c)) bottom right/14px 2px no-repeat,
+    linear-gradient(var(--c),var(--c)) bottom right/2px 14px no-repeat;
+  opacity:.8;
+}
+.viewer span{font:600 .75rem "Chakra Petch",sans-serif;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.viewer span::before{content:"";width:30px;height:30px;border:1.5px solid var(--c);transform:rotateX(55deg) rotateZ(45deg);opacity:.9}
+.body{padding:.9rem 1rem 1.1rem}
+.body h3{font-size:1.15rem;font-weight:600}
+.body p{margin:.35rem 0 0;font-size:.92rem;color:var(--muted);line-height:1.5}
+
+/* Colori per famiglia */
+.k-int{--c:var(--c-int)}.k-in{--c:var(--c-in)}.k-out{--c:var(--c-out)}.k-io{--c:var(--c-io)}
+.k-arch{--c:var(--c-arch)}.k-port{--c:var(--c-port)}.k-net{--c:var(--c-net)}
+
+/* Schede cliccabili ed evidenziazione */
+.card{cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s}
+.card:hover{border-color:var(--c)}
+.card:hover .viewer::before{opacity:1}
+.card:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--c)}
+.card.is-active{
+  border-color:var(--c);
+  background:color-mix(in srgb,var(--c) 10%,var(--panel));
+  box-shadow:inset 0 0 0 1px var(--c),inset 0 0 28px color-mix(in srgb,var(--c) 22%,transparent);
+}
+.card.is-active .body h3{color:var(--c)}
+.card.is-active .viewer{background:radial-gradient(circle at 50% 60%,color-mix(in srgb,var(--c) 32%,transparent),transparent 70%),var(--bg2)}
+
+/* Finestra di dettaglio */
+.sheet{
+  padding:0;border:1px solid var(--c);background:var(--panel);color:var(--ink);
+  width:min(820px,calc(100% - 2rem));max-height:calc(100% - 2rem);overflow:auto;
+  clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px));
+}
+.sheet[open]{animation:pop .22s ease-out}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.sheet::backdrop{background:rgba(6,10,28,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.sheet-in{display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;padding:1.25rem}
+.sheet .sheet-viewer{margin:0;aspect-ratio:1;min-height:240px}
+.sheet .sheet-viewer span::before{width:56px;height:56px;border-width:2px}
+.sheet-info{display:flex;flex-direction:column;gap:1rem;min-width:0}
+.sheet-top{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.fam{font:600 .9rem "Chakra Petch",sans-serif;color:var(--c);display:flex;align-items:center;gap:.5rem}
+.fam::before{content:"";width:10px;height:10px;background:var(--c);transform:rotate(45deg);box-shadow:var(--glow) var(--c)}
+.sheet h2{font-size:clamp(1.7rem,4vw,2.3rem)}
+.sheet-info>p{margin:0;color:var(--muted)}
+.tip{border-left:2px solid var(--c);padding:.6rem 0 .6rem 1rem;background:color-mix(in srgb,var(--c) 7%,transparent)}
+.tip h3{font-size:1rem;color:var(--c);margin-bottom:.25rem}
+.tip p{margin:0;font-size:.95rem}
+.sheet-nav{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.sheet-nav span{font:600 .85rem "Chakra Petch",sans-serif;color:var(--muted)}
+.btn{
+  font:600 .9rem "Chakra Petch",sans-serif;color:var(--ink);background:transparent;cursor:pointer;
+  border:1px solid var(--line);padding:.5rem .9rem;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+.btn:hover{border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,transparent)}
+.btn:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--c)}
+.x{padding:.35rem .65rem;font-size:1rem;line-height:1}
+
+/* Livelli 3D */
+.gl-layer{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4}
+.gl-on .viewer>span{visibility:hidden}
+.gl-sheet{position:absolute;inset:0;width:100%;height:100%;z-index:1;cursor:grab;touch-action:none}
+.gl-sheet:active{cursor:grabbing}
+.drag-hint{position:absolute;left:0;right:0;bottom:.75rem;text-align:center;font:600 .75rem "Chakra Petch",sans-serif;color:var(--muted);z-index:2;pointer-events:none}
+
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+footer div{max-width:1180px;margin:0 auto;padding:1.5rem 1.25rem}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;padding-top:3rem;gap:2rem}
+  .sheet-in{grid-template-columns:1fr}
+  .sheet .sheet-viewer{aspect-ratio:16/10;min-height:0}
+}
+@media (max-width:520px){
+  .chip{margin:8%;padding:.5rem}
+  .chip::before{display:none}
+  .chip small{display:none}
+  .note{display:none}
+  .core{margin:4%}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .trace{animation:none;stroke-dashoffset:0}
+  .chip{transition:none}
+  .card{transition:none}
+  .sheet[open]{animation:none}
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="logo" href="#top"><i></i>Hardware base</a>
+    <nav aria-label="Famiglie di componenti">
+      <a href="#interni">Interni</a>
+      <a href="#input">Input</a>
+      <a href="#output">Output</a>
+      <a href="#io">Input/output</a>
+      <a href="#archiviazione">Archiviazione</a>
+      <a href="#porte">Porte</a>
+      <a href="#rete">Rete</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero" id="top">
+  <div>
+    <h1>Hardware, pezzo per pezzo</h1>
+    <p>Tutto quello che compone un computer, diviso in sette famiglie: cosa c’è dentro, cosa ci colleghiamo, dove finiscono i dati e come il computer parla con il resto del mondo.</p>
+    <div class="hint">Scegli una famiglia sulla scheda, poi tocca un componente per aprirlo</div>
+  </div>
+
+  <div class="board" aria-label="Mappa delle famiglie di componenti">
+    <svg viewBox="0 0 300 300" aria-hidden="true">
+      <g>
+        <path class="trace" stroke="var(--c-int)"  d="M150 150 V110 H50 V50"/>
+        <path class="trace" stroke="var(--c-in)"   d="M150 150 V50"/>
+        <path class="trace" stroke="var(--c-out)"  d="M150 150 V110 H250 V50"/>
+        <path class="trace" stroke="var(--c-io)"   d="M150 150 H50"/>
+        <path class="trace" stroke="var(--c-arch)" d="M150 150 H250"/>
+        <path class="trace" stroke="var(--c-port)" d="M150 150 V190 H50 V250"/>
+        <path class="trace" stroke="var(--c-net)"  d="M150 150 V250"/>
+      </g>
+      <circle class="via" stroke="var(--c-int)"  cx="50"  cy="110" r="3.5"/>
+      <circle class="via" stroke="var(--c-out)"  cx="250" cy="110" r="3.5"/>
+      <circle class="via" stroke="var(--c-port)" cx="50"  cy="190" r="3.5"/>
+    </svg>
+    <div class="cells">
+      <a class="chip k-int"  href="#interni"><b>Componenti interni</b><small>8 pezzi</small></a>
+      <a class="chip k-in"   href="#input"><b>Input</b><small>6 pezzi</small></a>
+      <a class="chip k-out"  href="#output"><b>Output</b><small>4 pezzi</small></a>
+      <a class="chip k-io"   href="#io"><b>Input/output</b><small>2 pezzi</small></a>
+      <div class="core">Il<br>computer</div>
+      <a class="chip k-arch" href="#archiviazione"><b>Archiviazione esterna</b><small>3 pezzi</small></a>
+      <a class="chip k-port" href="#porte"><b>Porte e connessioni</b><small>5 pezzi</small></a>
+      <a class="chip k-net"  href="#rete"><b>Rete</b><small>4 pezzi</small></a>
+      <div class="note">32 componenti in 7 famiglie</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <section id="interni" class="k-int">
+    <div class="head">
+      <h2>Componenti interni</h2><span class="count">8 pezzi</span>
+      <p>Le parti che stanno dentro il case o il portatile. Lavorano insieme per elaborare, ricordare e mostrare le informazioni.</p>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="viewer" data-model="scheda-madre"><span>Modello 3D</span></div><div class="body"><h3>Scheda madre</h3><p>Il circuito principale: collega tutti i componenti e li fa comunicare.</p></div></article>
+      <article class="card"><div class="viewer" data-model="cpu"><span>Modello 3D</span></div><div class="body"><h3>Processore (CPU)</h3><p>Il “cervello” che esegue le istruzioni dei programmi.</p></div></article>
+      <article class="card"><div class="viewer" data-model="ram"><span>Modello 3D</span></div><div class="body"><h3>Memoria RAM</h3><p>Memoria di lavoro veloce e temporanea: si svuota allo spegnimento.</p></div></article>
+      <article class="card"><div class="viewer" data-model="hdd"><span>Modello 3D</span></div><div class="body"><h3>Hard disk (HDD)</h3><p>Archivio permanente con dischi magnetici che girano. Capiente ed economico.</p></div></article>
+      <article class="card"><div class="viewer" data-model="ssd"><span>Modello 3D</span></div><div class="body"><h3>SSD</h3><p>Archivio permanente su chip, senza parti in movimento. Molto più veloce di un HDD.</p></div></article>
+      <article class="card"><div class="viewer" data-model="gpu"><span>Modello 3D</span></div><div class="body"><h3>Scheda video (GPU)</h3><p>Elabora le immagini che vedi sullo schermo, dai documenti ai videogiochi.</p></div></article>
+      <article class="card"><div class="viewer" data-model="alimentatore"><span>Modello 3D</span></div><div class="body"><h3>Alimentatore</h3><p>Trasforma la corrente della presa in energia adatta ai componenti.</p></div></article>
+      <article class="card"><div class="viewer" data-model="ventola"><span>Modello 3D</span></div><div class="body"><h3>Ventole e dissipatori</h3><p>Portano via il calore ed evitano che il computer si surriscaldi.</p></div></article>
+    </div>
+  </section>
+
+  <section id="input" class="k-in">
+    <div class="head">
+      <h2>Periferiche di input</h2><span class="count">6 pezzi</span>
+      <p>Servono a far entrare informazioni nel computer: testo, movimenti, suoni, immagini.</p>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="viewer" data-model="tastiera"><span>Modello 3D</span></div><div class="body"><h3>Tastiera</h3><p>Per scrivere testo e dare comandi con le scorciatoie.</p></div></article>
+      <article class="card"><div class="viewer" data-model="mouse"><span>Modello 3D</span></div><div class="body"><h3>Mouse</h3><p>Muove il puntatore sullo schermo e permette di cliccare e selezionare.</p></div></article>
+      <article class="card"><div class="viewer" data-model="touchpad"><span>Modello 3D</span></div><div class="body"><h3>Touchpad</h3><p>La superficie sensibile del portatile che sostituisce il mouse.</p></div></article>
+      <article class="card"><div class="viewer" data-model="microfono"><span>Modello 3D</span></div><div class="body"><h3>Microfono</h3><p>Cattura la voce e i suoni per chiamate, registrazioni e dettatura.</p></div></article>
+      <article class="card"><div class="viewer" data-model="webcam"><span>Modello 3D</span></div><div class="body"><h3>Webcam</h3><p>Riprende video e foto, soprattutto per le videochiamate.</p></div></article>
+      <article class="card"><div class="viewer" data-model="scanner"><span>Modello 3D</span></div><div class="body"><h3>Scanner</h3><p>Trasforma fogli e foto di carta in file digitali.</p></div></article>
+    </div>
+  </section>
+
+  <section id="output" class="k-out">
+    <div class="head">
+      <h2>Periferiche di output</h2><span class="count">4 pezzi</span>
+      <p>Portano fuori dal computer il risultato del lavoro, in forma di immagini, carta o suono.</p>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="viewer" data-model="monitor"><span>Modello 3D</span></div><div class="body"><h3>Monitor</h3><p>Mostra immagini, testo e video prodotti dal computer.</p></div></article>
+      <article class="card"><div class="viewer" data-model="stampante"><span>Modello 3D</span></div><div class="body"><h3>Stampante</h3><p>Riproduce su carta documenti e immagini.</p></div></article>
+      <article class="card"><div class="viewer" data-model="altoparlanti"><span>Modello 3D</span></div><div class="body"><h3>Altoparlanti</h3><p>Diffondono l’audio nella stanza.</p></div></article>
+      <article class="card"><div class="viewer" data-model="cuffie"><span>Modello 3D</span></div><div class="body"><h3>Cuffie</h3><p>Audio personale, senza disturbare chi sta intorno.</p></div></article>
+    </div>
+  </section>
+
+  <section id="io" class="k-io">
+    <div class="head">
+      <h2>Periferiche di input/output</h2><span class="count">2 pezzi</span>
+      <p>Dispositivi che fanno entrambe le cose: ricevono informazioni e le restituiscono.</p>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="viewer" data-model="touchscreen"><span>Modello 3D</span></div><div class="body"><h3>Touchscreen</h3><p>Uno schermo che mostra le immagini e insieme riconosce il tocco delle dita.</p></div></article>
+      <article class="card"><div class="viewer" data-model="multifunzione"><span>Modello 3D</span></div><div class="body"><h3>Stampante multifunzione</h3><p>Stampa, scansiona e fotocopia: legge e scrive su carta.</p></div></article>
+    </div>
+  </section>
+
+  <section id="archiviazione" class="k-arch">
+    <div class="head">
+      <h2>Archiviazione esterna</h2><span class="count">3 pezzi</span>
+      <p>Supporti da collegare e scollegare per salvare, spostare e fare copie di sicurezza dei file.</p>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="viewer" data-model="chiavetta"><span>Modello 3D</span></div><div class="body"><h3>Chiavetta USB</h3><p>Piccola e tascabile, ideale per portare file da un computer all’altro.</p></div></article>
+      <article class="card"><div class="viewer" data-model="hdd-esterno"><span>Modello 3D</span></div><div class="body"><h3>Hard disk esterno</h3><p>Molto spazio per backup, foto e video.</p></div></article>
+      <article class="card"><div class="viewer" data-model="sd"><span>Modello 3D</span></div><div class="body"><h3>Scheda di memoria (SD)</h3><p>Usata in fotocamere, droni e telefoni; si legge con un apposito lettore.</p></div></article>
+    </div>
+  </section>
+
+  <section id="porte" class="k-port">
+    <div class="head">
+      <h2>Porte e connessioni</h2><span class="count">5 pezzi</span>
+      <p>Gli ingressi sul computer dove si collegano cavi e dispositivi. Riconoscerli evita molti dubbi.</p>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="viewer" data-model="usb"><span>Modello 3D</span></div><div class="body"><h3>USB</h3><p>La porta rettangolare più diffusa, per mouse, chiavette e stampanti.</p></div></article>
+      <article class="card"><div class="viewer" data-model="usb-c"><span>Modello 3D</span></div><div class="body"><h3>USB-C</h3><p>Porta piccola e reversibile: dati, video e ricarica in un solo cavo.</p></div></article>
+      <article class="card"><div class="viewer" data-model="hdmi"><span>Modello 3D</span></div><div class="body"><h3>HDMI</h3><p>Porta video e audio verso monitor, TV e proiettori.</p></div></article>
+      <article class="card"><div class="viewer" data-model="jack"><span>Modello 3D</span></div><div class="body"><h3>Jack audio</h3><p>Ingresso rotondo da 3,5 mm per cuffie e microfoni.</p></div></article>
+      <article class="card"><div class="viewer" data-model="ethernet"><span>Modello 3D</span></div><div class="body"><h3>Porta Ethernet</h3><p>Collega il computer alla rete con un cavo, in modo stabile.</p></div></article>
+    </div>
+  </section>
+
+  <section id="rete" class="k-net">
+    <div class="head">
+      <h2>Rete</h2><span class="count">4 pezzi</span>
+      <p>L’hardware che permette al computer di collegarsi a internet e ad altri dispositivi.</p>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="viewer" data-model="scheda-rete"><span>Modello 3D</span></div><div class="body"><h3>Scheda di rete</h3><p>Il componente che permette al computer di comunicare in rete.</p></div></article>
+      <article class="card"><div class="viewer" data-model="wifi"><span>Modello 3D</span></div><div class="body"><h3>Wi-Fi</h3><p>Connessione senza fili alla rete di casa o dell’ufficio.</p></div></article>
+      <article class="card"><div class="viewer" data-model="bluetooth"><span>Modello 3D</span></div><div class="body"><h3>Bluetooth</h3><p>Collega a breve distanza cuffie, mouse e telefoni senza cavi.</p></div></article>
+      <article class="card"><div class="viewer" data-model="router"><span>Modello 3D</span></div><div class="body"><h3>Router</h3><p>Smista la connessione a internet tra tutti i dispositivi di casa.</p></div></article>
+    </div>
+  </section>
+
+</main>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
+  <div class="sheet-in">
+    <div class="viewer sheet-viewer" id="sheet-viewer"><span>Modello 3D</span></div>
+    <div class="sheet-info">
+      <div class="sheet-top">
+        <span class="fam" id="sheet-fam"></span>
+        <button class="btn x" id="sheet-close" aria-label="Chiudi">✕</button>
+      </div>
+      <h2 id="sheet-title"></h2>
+      <p id="sheet-desc"></p>
+      <div class="tip"><h3>Da sapere</h3><p id="sheet-tip"></p></div>
+      <div class="sheet-nav">
+        <button class="btn" id="sheet-prev">Precedente</button>
+        <span id="sheet-pos"></span>
+        <button class="btn" id="sheet-next">Successivo</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<footer><div>Corso base di informatica: modulo hardware.</div></footer>
+
+<script>
+(function(){
+  var tips = {
+    "scheda-madre":"Decide quali componenti si possono montare: non tutti i processori e le RAM sono compatibili con ogni scheda madre.",
+    "cpu":"La velocità si misura in GHz; più core permettono di svolgere più attività contemporaneamente.",
+    "ram":"Si misura in GB: 8 GB bastano per l’uso quotidiano, 16 GB sono comodi con molti programmi aperti.",
+    "hdd":"Contiene parti meccaniche in movimento, quindi teme urti e cadute.",
+    "ssd":"Sostituire un vecchio HDD con un SSD è spesso il modo più economico per velocizzare un computer.",
+    "gpu":"Può essere integrata nel processore oppure dedicata, cioè una scheda separata e più potente.",
+    "alimentatore":"Nei portatili è il caricabatterie esterno; nei PC fissi si trova dentro il case.",
+    "ventola":"Polvere e prese d’aria ostruite sono la causa più comune di rumore e surriscaldamento.",
+    "tastiera":"Le scorciatoie come Ctrl+C e Ctrl+V fanno risparmiare molto tempo.",
+    "mouse":"Può essere a filo, senza fili con ricevitore USB oppure Bluetooth.",
+    "touchpad":"Usando due o più dita si possono fare gesti come scorrere o ingrandire.",
+    "microfono":"Molti portatili lo hanno integrato, ma quello delle cuffie spesso registra la voce in modo più pulito.",
+    "webcam":"Coprirla quando non serve è una semplice abitudine di privacy.",
+    "scanner":"Per documenti semplici, molte app per smartphone fanno un lavoro simile.",
+    "monitor":"I dati principali sono la diagonale in pollici e la risoluzione, per esempio Full HD.",
+    "stampante":"Le stampanti a getto d’inchiostro costano poco ma le cartucce molto; le laser convengono se si stampa tanto.",
+    "altoparlanti":"Possono essere integrati nel portatile o nel monitor, oppure esterni e collegati via cavo o Bluetooth.",
+    "cuffie":"Quelle con microfono incorporato sono ideali per le videochiamate.",
+    "touchscreen":"È il modo principale con cui usiamo smartphone e tablet.",
+    "multifunzione":"È l’esempio perfetto di dispositivo che fa entrare e uscire informazioni.",
+    "chiavetta":"Prima di scollegarla è buona norma usare “Rimozione sicura” per non perdere dati.",
+    "hdd-esterno":"Ottimo per i backup: la regola d’oro è avere sempre almeno una seconda copia dei file importanti.",
+    "sd":"Esiste anche il formato ridotto microSD, usato in smartphone e action cam.",
+    "usb":"Le porte USB 3 sono più veloci e spesso si riconoscono dall’interno blu.",
+    "usb-c":"Stessa forma non significa stesse funzioni: non tutte le USB-C trasmettono video o ricaricano.",
+    "hdmi":"È il modo più comune per collegare un portatile al proiettore dell’aula.",
+    "jack":"Molti telefoni recenti non lo hanno più e usano cuffie Bluetooth o USB-C.",
+    "ethernet":"Il cavo è più stabile del Wi-Fi e spesso anche più veloce.",
+    "scheda-rete":"Ogni scheda di rete ha un codice unico chiamato indirizzo MAC.",
+    "wifi":"Il segnale si indebolisce con la distanza e attraversando muri spessi.",
+    "bluetooth":"Al primo utilizzo i dispositivi vanno “associati” tra loro.",
+    "router":"A casa spesso è un unico apparecchio che fa anche da modem e da punto di accesso Wi-Fi."
+  };
+
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
+  var dlg = document.getElementById("sheet");
+  var $ = function(id){ return document.getElementById(id); };
+  var current = -1;
+  var famClasses = ["k-int","k-in","k-out","k-io","k-arch","k-port","k-net"];
+
+  function keyOf(card){ return card.querySelector(".viewer").getAttribute("data-model"); }
+
+  function select(i){
+    cards.forEach(function(c){ c.classList.remove("is-active"); c.setAttribute("aria-pressed","false"); });
+    var card = cards[i];
+    card.classList.add("is-active");
+    card.setAttribute("aria-pressed","true");
+    current = i;
+    return card;
+  }
+
+  function open(i){
+    var card = select(i);
+    var section = card.closest("section");
+    var key = keyOf(card);
+    famClasses.forEach(function(k){ dlg.classList.remove(k); });
+    famClasses.forEach(function(k){ if (section.classList.contains(k)) dlg.classList.add(k); });
+    $("sheet-fam").textContent = section.querySelector("h2").textContent;
+    $("sheet-title").textContent = card.querySelector("h3").textContent;
+    $("sheet-desc").textContent = card.querySelector(".body p").textContent;
+    $("sheet-tip").textContent = tips[key] || "";
+    $("sheet-viewer").setAttribute("data-model", key);
+    $("sheet-pos").textContent = (i + 1) + " di " + cards.length;
+    card.scrollIntoView({block:"center"});
+    if (!dlg.open) dlg.showModal();
+  }
+
+  cards.forEach(function(card, i){
+    card.tabIndex = 0;
+    card.setAttribute("role","button");
+    card.setAttribute("aria-haspopup","dialog");
+    card.setAttribute("aria-pressed","false");
+    card.addEventListener("click", function(){ open(i); });
+    card.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(i); }
+    });
+  });
+
+  $("sheet-close").addEventListener("click", function(){ dlg.close(); });
+  $("sheet-prev").addEventListener("click", function(){ open((current - 1 + cards.length) % cards.length); });
+  $("sheet-next").addEventListener("click", function(){ open((current + 1) % cards.length); });
+  dlg.addEventListener("click", function(e){ if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener("keydown", function(e){
+    if (e.key === "ArrowLeft") $("sheet-prev").click();
+    if (e.key === "ArrowRight") $("sheet-next").click();
+  });
+  dlg.addEventListener("close", function(){ if (current >= 0) cards[current].focus({preventScroll:true}); });
+
+  // Link diretti: #rete apre una sezione, #cpu apre direttamente il componente
+  var id = location.hash.slice(1);
+  if (id) {
+    var idx = cards.findIndex(function(c){ return keyOf(c) === id; });
+    if (idx >= 0) open(idx);
+    else { var el = document.getElementById(id); if (el) el.scrollIntoView(); }
+  }
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  if (!window.THREE) return;
+  var PI = Math.PI;
+  var canvas = document.createElement('canvas');
+  canvas.className = 'gl-layer';
+  canvas.setAttribute('aria-hidden','true');
+  var renderer;
+  try { renderer = new THREE.WebGLRenderer({canvas:canvas, alpha:true, antialias:true}); } catch(e){ return; }
+  document.body.appendChild(canvas);
+  document.documentElement.classList.add('gl-on');
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  renderer.setPixelRatio(DPR);
+  renderer.setClearColor(0x000000, 0);
+  renderer.autoClear = false;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Materiali */
+  function std(o){ return new THREE.MeshStandardMaterial(o); }
+  var base = {
+    body: std({color:0x1d2648, metalness:.45, roughness:.42}),
+    dark: std({color:0x0c1124, metalness:.2, roughness:.6}),
+    metal: std({color:0xb4bfd4, metalness:.55, roughness:.3}),
+    gold: std({color:0xe0ab45, metalness:.6, roughness:.3}),
+    copper: std({color:0xd0804a, metalness:.6, roughness:.32}),
+    pcb: std({color:0x123a34, metalness:.1, roughness:.7}),
+    white: std({color:0xf1f4fa, roughness:.85})
+  };
+  var FAMS = ['k-int','k-in','k-out','k-io','k-arch','k-port','k-net'];
+  var pal = {};
+  function makePal(){
+    var p = Object.create(base);
+    p.acc = std({color:0xffffff, emissive:0xffffff, emissiveIntensity:.9, roughness:.4});
+    p.accSoft = std({color:0xffffff, emissive:0xffffff, emissiveIntensity:.22, metalness:.3, roughness:.5});
+    p.glass = std({color:0x3b4c80, transparent:true, opacity:.5, emissive:0xffffff, emissiveIntensity:.12, roughness:.15});
+    p.screen = std({color:0x0a0f24, emissive:0xffffff, emissiveIntensity:.3, roughness:.3});
+    p.line = new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.4});
+    return p;
+  }
+  function setPal(p, hex){
+    var c = new THREE.Color(hex);
+    p.acc.color.copy(c); p.acc.emissive.copy(c);
+    p.accSoft.color.copy(c); p.accSoft.emissive.copy(c);
+    p.glass.emissive.copy(c); p.screen.emissive.copy(c); p.line.color.copy(c);
+  }
+  FAMS.forEach(function(f){ pal[f] = makePal(); });
+  function readColors(){
+    FAMS.forEach(function(f){
+      var sec = document.querySelector('section.' + f);
+      var hex = sec ? getComputedStyle(sec).getPropertyValue('--c').trim() : '';
+      setPal(pal[f], hex || '#2ee6ff');
+    });
+  }
+  readColors();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+  new MutationObserver(readColors).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+
+  /* Strumenti per costruire i modelli */
+  var G, P;
+  function add(geo, m, x, y, z, edge){
+    var mesh = new THREE.Mesh(geo, m);
+    mesh.position.set(x||0, y||0, z||0);
+    if (edge) mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), P.line));
+    G.add(mesh); return mesh;
+  }
+  function B(w,h,d,m,x,y,z,e){ return add(new THREE.BoxGeometry(w,h,d), m,x,y,z, e === undefined ? Math.max(w,h,d) > .55 : e); }
+  function C(rt,rb,h,m,x,y,z,seg,e){ return add(new THREE.CylinderGeometry(rt,rb,h,seg||28), m,x,y,z, e === undefined ? Math.max(rt,rb) > .3 : e); }
+  function S(r,m,x,y,z){ return add(new THREE.SphereGeometry(r,24,16), m,x,y,z,false); }
+  function T(R,r,arc,m,x,y,z){ return add(new THREE.TorusGeometry(R,r,10,48,arc), m,x,y,z,false); }
+  function X(shape,depth,m,x,y,z){ return add(new THREE.ExtrudeGeometry(shape,{depth:depth, bevelEnabled:false, curveSegments:10}), m,x,y,z,true); }
+  function rx(o,a){ o.rotation.x = a; return o; }
+  function rz(o,a){ o.rotation.z = a; return o; }
+  function V(x,y){ return new THREE.Vector2(x,y); }
+  function rr(w,h,r){
+    var s = new THREE.Shape(), x = -w/2, y = -h/2;
+    s.moveTo(x+r,y); s.lineTo(x+w-r,y); s.quadraticCurveTo(x+w,y,x+w,y+r);
+    s.lineTo(x+w,y+h-r); s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    s.lineTo(x+r,y+h); s.quadraticCurveTo(x,y+h,x,y+h-r);
+    s.lineTo(x,y+r); s.quadraticCurveTo(x,y,x+r,y);
+    return s;
+  }
+  function pivot(x,y,z){ var p = new THREE.Group(); p.position.set(x,y,z); G.add(p); return p; }
+  function move(mesh, parent){ G.remove(mesh); parent.add(mesh); return mesh; }
+  function fan(cx,cy,cz,r,axis){
+    var prev = G, g = new THREE.Group(); G = g;
+    C(r*.28, r*.28, .1, P.metal, 0,0,0, 20, false);
+    for (var k = 0; k < 7; k++){
+      var a = k/7*PI*2;
+      var b = B(r*.62, .02, r*.3, P.metal, Math.cos(a)*r*.55, 0, Math.sin(a)*r*.55, false);
+      b.rotation.order = 'YXZ'; b.rotation.y = -a; b.rotation.x = .4;
+    }
+    rx(T(r, .025, PI*2, P.acc, 0,0,0), PI/2);
+    G = prev; g.position.set(cx,cy,cz);
+    if (axis === 'z') g.rotation.x = PI/2;
+    G.add(g); return g;
+  }
+  function cable(z, len, m){ rx(C(.075,.075,len,m||P.dark,0,0,z,12,false), PI/2); }
+
+  /* Modelli */
+  var M = {};
+  M['scheda-madre'] = function(){
+    B(3,.08,3.4,P.pcb,0,0,0);
+    B(.85,.1,.85,P.metal,-.3,.09,-.7); B(.6,.03,.6,P.acc,-.3,.155,-.7,false);
+    for (var i = 0; i < 4; i++) B(.08,.14,1.8,i%2 ? P.dark : P.accSoft,.65+i*.17,.11,-.55,false);
+    B(2.1,.14,.1,P.dark,-.35,.11,.75,false); B(2.1,.14,.1,P.dark,-.35,.11,1.25,false);
+    B(.5,.16,.5,P.body,.75,.12,1.05,false); B(.3,.02,.3,P.acc,.75,.21,1.05,false);
+    B(1.3,.32,.26,P.body,-.3,.2,-1.38); B(.26,.32,1.1,P.body,-1.15,.2,-.75);
+    B(.32,.55,1.4,P.metal,-1.34,.31,-.85);
+    for (var j = 0; j < 6; j++) C(.06,.06,.2,P.metal,.25+j*.14,.14,.3,12);
+    C(.18,.18,.04,P.metal,1.1,.06,.35);
+    B(1.2,.012,.025,P.acc,.2,.045,.05,false); B(.025,.012,1.0,P.acc,-.9,.045,.5,false);
+  };
+  M['cpu'] = function(){
+    B(2,.08,2,P.pcb,0,0,0);
+    B(1.5,.14,1.5,P.metal,0,.11,0);
+    rx(T(.45,.015,PI*2,P.acc,0,.185,0), PI/2);
+    B(.3,.012,.3,P.accSoft,0,.186,0,false);
+    B(.14,.01,.14,P.gold,-.88,.045,-.88,false);
+    for (var a = 0; a < 7; a++) for (var b = 0; b < 7; b++) B(.07,.05,.07,P.gold,-.84+a*.28,-.065,-.84+b*.28,false);
+  };
+  M['ram'] = function(){
+    B(3,.9,.06,P.pcb,0,0,0);
+    for (var i = 0; i < 8; i++) B(.28,.4,.05,P.dark,-1.19+i*.34,.05,.05,false);
+    B(3,.75,.04,P.body,0,.07,-.06);
+    B(2.9,.08,.12,P.acc,0,.47,0,false);
+    B(2.8,.12,.07,P.gold,0,-.39,0,false); B(.08,.14,.08,P.dark,.4,-.39,0,false);
+  };
+  M['hdd'] = function(){
+    B(2,.3,2.8,P.body,0,0,0);
+    C(.85,.85,.04,P.metal,0,.17,-.35,48);
+    rx(T(.55,.012,PI*2,P.acc,0,.195,-.35), PI/2);
+    C(.17,.17,.08,P.metal,0,.21,-.35,20,false);
+    C(.14,.14,.12,P.metal,.7,.21,.9,16,false);
+    B(1.25,.04,.12,P.metal,.3,.25,.4).rotation.y = 2.25;
+    B(1.6,.012,.3,P.acc,0,.156,1.15,false);
+    B(.9,.14,.06,P.dark,0,0,1.42,false);
+  };
+  M['ssd'] = function(){
+    B(2,.25,2.8,P.body,0,0,0); B(1.7,.012,2.3,P.dark,0,.13,-.05);
+    B(1.7,.014,.07,P.acc,0,.14,-.75,false); B(1.7,.014,.07,P.acc,0,.14,-.55,false);
+    B(.5,.014,.5,P.accSoft,-.4,.14,.5,false);
+    B(1.1,.1,.06,P.gold,.3,0,1.42,false);
+  };
+  M['gpu'] = function(){
+    B(3.4,.45,1.3,P.body,0,0,0);
+    fan(-.8,.25,0,.48,'y'); fan(.8,.25,0,.48,'y');
+    B(3.3,.06,1.25,P.pcb,0,-.31,0); B(3.3,.04,1.25,P.metal,0,-.36,0);
+    B(1.3,.06,.16,P.gold,-.2,-.31,.72,false);
+    B(.06,.7,1.4,P.metal,-1.74,-.05,0);
+    B(3.0,.05,.02,P.acc,0,.1,.66,false);
+  };
+  M['alimentatore'] = function(){
+    B(2,1.4,2.2,P.body,0,0,0);
+    C(.75,.75,.02,P.dark,0,.71,0,40,false);
+    rx(T(.72,.012,PI*2,P.metal,0,.73,0), PI/2);
+    fan(0,.74,0,.6,'y');
+    B(.45,.3,.05,P.dark,-.5,.25,1.12,false); B(.14,.22,.05,P.acc,.05,.25,1.12,false);
+    for (var i = 0; i < 5; i++) B(1.6,.03,.02,P.dark,0,-.2-i*.1,1.11,false);
+    for (var c = 0; c < 4; c++) rx(C(.06,.06,1.1,c%2 ? P.dark : P.accSoft,-.6+c*.4,-.3,-1.6,10,false), PI/2);
+  };
+  M['ventola'] = function(){
+    for (var i = 0; i < 15; i++) B(1.8,.03,1.1,P.metal,0,-.7+i*.1,0,false);
+    B(1.8,.04,1.1,P.accSoft,0,.73,0,false);
+    [-.5,-.17,.17,.5].forEach(function(x){ C(.05,.05,1.9,P.copper,x,-.05,0,12,false); });
+    B(1,.2,1,P.copper,0,-1.05,0); B(1.1,.08,1.1,P.metal,0,-1.18,0);
+    B(1.6,.12,.22,P.dark,0,.74,.68,false); B(1.6,.12,.22,P.dark,0,-.74,.68,false);
+    B(.12,1.6,.22,P.dark,-.74,0,.68,false); B(.12,1.6,.22,P.dark,.74,0,.68,false);
+    fan(0,0,.7,.66,'z');
+  };
+  M['tastiera'] = function(){
+    B(4.2,.15,1.7,P.body,0,0,0);
+    for (var f = 0; f < 13; f++) B(.25,.06,.14,P.dark,-1.8+f*.3,.1,-.72,false);
+    for (var r = 0; r < 3; r++) for (var c = 0; c < 13; c++) B(.25,.1,.25,(r === 1 && c === 12) ? P.acc : P.dark,-1.8+c*.3,.12,-.46+r*.31,false);
+    [-1.8,-1.5,-1.2,1.2,1.5,1.8].forEach(function(x){ B(.25,.1,.25,P.dark,x,.12,.48,false); });
+    B(1.95,.1,.25,P.dark,0,.12,.48,false);
+    B(4.1,.03,.04,P.acc,0,-.06,.85,false);
+  };
+  M['mouse'] = function(){
+    S(1,P.body,0,0,0).scale.set(.6,.36,1);
+    rz(C(.09,.09,.07,P.acc,0,.33,-.42,16,false), PI/2);
+    B(.015,.05,.4,P.dark,0,.25,-.75,false);
+    var ring = T(1,.02,PI*2,P.acc,0,-.02,0); ring.scale.set(.6,1,1); ring.rotation.x = PI/2;
+  };
+  M['touchpad'] = function(){
+    B(3,.12,1.8,P.body,0,0,0);
+    B(1.3,.02,.85,P.dark,0,.065,.25,false);
+    B(1.34,.022,.02,P.acc,0,.066,-.19,false); B(1.34,.022,.02,P.acc,0,.066,.69,false);
+    B(.02,.022,.9,P.acc,-.67,.066,.25,false); B(.02,.022,.9,P.acc,.67,.066,.25,false);
+    for (var r = 0; r < 2; r++) for (var c = 0; c < 10; c++) B(.24,.05,.2,P.dark,-1.35+c*.3,.085,-.75+r*.26,false);
+    S(.09,P.white,.25,.12,.35);
+    rx(T(.18,.01,PI*2,P.acc,.25,.08,.35), PI/2);
+  };
+  M['microfono'] = function(){
+    C(.7,.8,.1,P.body,0,0,0,40);
+    rx(T(.75,.02,PI*2,P.acc,0,.05,0), PI/2);
+    C(.05,.05,1.4,P.metal,0,.75,0,12,false);
+    C(.26,.22,.7,P.body,0,1.75,0,28,false);
+    S(.32,P.metal,0,2.22,0);
+    rx(T(.3,.025,PI*2,P.acc,0,2.08,0), PI/2);
+    S(.035,P.acc,0,1.75,.25);
+  };
+  M['webcam'] = function(){
+    rz(C(.35,.35,1.6,P.body,0,0,0,32), PI/2);
+    rx(C(.25,.25,.1,P.dark,0,0,.33,28,false), PI/2);
+    rx(C(.16,.16,.04,P.glass,0,0,.39,24,false), PI/2);
+    T(.25,.02,PI*2,P.acc,0,0,.39);
+    S(.035,P.acc,.5,0,.33);
+    B(.5,.08,.6,P.dark,0,-.42,0,false); B(.5,.5,.08,P.dark,0,-.68,-.26,false);
+  };
+  M['scanner'] = function(){
+    B(3,.3,2.2,P.body,0,0,0);
+    B(2.6,.02,1.8,P.glass,0,.16,0);
+    B(2.6,.03,.07,P.acc,0,.18,-.2,false);
+    var p = pivot(0,.17,-1.1); p.rotation.x = -.65;
+    move(B(3,.1,2.2,P.body,0,.05,1.1), p);
+    B(.4,.02,.15,P.accSoft,1.1,.16,.95,false);
+  };
+  M['monitor'] = function(){
+    B(3.2,1.9,.1,P.body,0,1.45,0);
+    B(3.0,1.72,.02,P.screen,0,1.47,.055,false);
+    B(1.1,.08,.01,P.acc,-.75,2.05,.068,false); B(.7,.06,.01,P.accSoft,-.95,1.85,.068,false);
+    B(1.0,.6,.01,P.accSoft,.7,1.45,.068,false); B(2.4,.04,.01,P.acc,0,.85,.068,false);
+    B(.22,.85,.14,P.metal,0,.3,-.16); B(1.3,.06,.75,P.metal,0,-.12,-.1);
+  };
+  M['stampante'] = function(){
+    B(2.6,.9,1.8,P.body,0,0,0);
+    B(2.6,.04,1.8,P.dark,0,.47,0,false);
+    B(1.9,.06,.06,P.dark,0,.05,.92,false);
+    B(1.6,.012,1.0,P.white,0,.03,1.4,false).rotation.x = .08;
+    B(1.8,1.1,.03,P.dark,0,.95,-.85,false).rotation.x = -.35;
+    B(1.6,1.0,.01,P.white,0,1.0,-.82,false).rotation.x = -.35;
+    B(.5,.02,.2,P.acc,.85,.5,.55,false);
+    B(2.4,.02,.012,P.accSoft,0,-.3,.905,false);
+  };
+  M['altoparlanti'] = function(){
+    [-1,1].forEach(function(s){
+      var x = s*.75;
+      B(.9,1.6,.9,P.body,x,0,0);
+      rx(C(.32,.32,.05,P.dark,x,-.3,.46,32,false), PI/2);
+      rx(C(.11,.11,.07,P.metal,x,-.3,.48,16,false), PI/2);
+      T(.34,.025,PI*2,P.acc,x,-.3,.47);
+      rx(C(.14,.14,.05,P.dark,x,.42,.46,24,false), PI/2);
+      T(.16,.02,PI*2,P.accSoft,x,.42,.47);
+    });
+  };
+  M['cuffie'] = function(){
+    T(1,.08,PI,P.body,0,0,0); T(.92,.06,PI,P.dark,0,0,0);
+    [-1,1].forEach(function(s){
+      B(.08,.4,.2,P.metal,s*1,-.1,0,false);
+      rz(C(.45,.45,.3,P.body,s*1.08,-.45,0,32), PI/2);
+      rz(C(.4,.4,.14,P.dark,s*.86,-.45,0,32,false), PI/2);
+      T(.42,.03,PI*2,P.acc,s*1.24,-.45,0).rotation.y = PI/2;
+    });
+  };
+  M['touchscreen'] = function(){
+    B(2.2,.08,3,P.body,0,0,0); B(2.0,.01,2.75,P.screen,0,.045,0,false);
+    for (var r = 0; r < 4; r++) for (var c = 0; c < 3; c++) B(.32,.012,.32,(r+c)%3 === 0 ? P.acc : P.accSoft,-.6+c*.6,.052,-.95+r*.5,false);
+    rx(T(.22,.012,PI*2,P.acc,.5,.07,.95), PI/2); rx(T(.38,.008,PI*2,P.accSoft,.5,.07,.95), PI/2);
+    S(.1,P.white,.5,.17,.95);
+  };
+  M['multifunzione'] = function(){
+    B(2.6,1.3,2,P.body,0,0,0);
+    B(2.5,.02,1.8,P.glass,0,.66,0,false);
+    var p = pivot(0,.67,-1); p.rotation.x = -.3;
+    move(B(2.6,.14,2,P.dark,0,.07,1), p);
+    B(.8,.04,.45,P.screen,.75,.5,1.12).rotation.x = -.6;
+    B(1.9,.06,.06,P.dark,0,-.1,1.02,false);
+    B(1.6,.012,.9,P.white,0,-.14,1.45,false);
+    B(2.4,.02,.012,P.acc,0,-.45,1.005,false);
+  };
+  M['chiavetta'] = function(){
+    B(.62,.26,1.6,P.body,0,0,0);
+    B(.64,.28,.08,P.acc,0,0,-.3,false);
+    B(.5,.18,.6,P.metal,0,0,1.1);
+    B(.1,.012,.1,P.dark,-.12,.096,1.15,false); B(.1,.012,.1,P.dark,.12,.096,1.15,false);
+    rx(T(.14,.035,PI*2,P.metal,0,0,-.95), PI/2);
+    S(.03,P.acc,0,.135,-.6);
+  };
+  M['hdd-esterno'] = function(){
+    B(2,.5,3,P.body,0,0,0); B(1.8,.012,2.8,P.dark,0,.256,0,false);
+    B(.4,.012,.12,P.accSoft,0,.262,-.9,false);
+    B(.7,.02,.04,P.acc,0,.1,1.51,false); B(.4,.12,.03,P.dark,.55,-.05,1.51,false);
+    rx(C(.05,.05,1.2,P.dark,.55,-.05,2.1,10,false), PI/2);
+  };
+  M['sd'] = function(){
+    var sh = new THREE.Shape([V(-.6,-.8),V(.6,-.8),V(.6,.8),V(-.35,.8),V(-.6,.55)]);
+    X(sh,.06,P.body,0,0,0).rotation.x = -PI/2;
+    B(1.0,.008,.85,P.accSoft,0,.064,.25,false);
+    for (var i = 0; i < 7; i++) B(.09,.008,.22,P.gold,-.3+i*.13,.064,-.6,false);
+    B(.05,.05,.25,P.acc,-.61,.03,.2,false);
+  };
+  M['usb'] = function(){
+    B(.75,.36,1.1,P.body,0,0,0);
+    B(.77,.38,.08,P.acc,0,0,-.35,false);
+    B(.56,.22,.65,P.metal,0,0,.87);
+    B(.48,.07,.55,P.acc,0,-.03,.9,false);
+    B(.1,.012,.1,P.dark,-.13,.111,1.0,false); B(.1,.012,.1,P.dark,.13,.111,1.0,false);
+    rx(C(.15,.12,.3,P.dark,0,0,-.7,16,false), PI/2); cable(-1.45,1.2);
+  };
+  M['usb-c'] = function(){
+    X(rr(.75,.36,.15),1.1,P.body,0,0,-.55);
+    X(rr(.77,.38,.16),.08,P.acc,0,0,-.35);
+    X(rr(.5,.17,.085),.5,P.metal,0,0,.55);
+    B(.36,.04,.42,P.dark,0,0,.82,false);
+    rx(C(.13,.1,.3,P.dark,0,0,-.7,16,false), PI/2); cable(-1.45,1.2);
+  };
+  M['hdmi'] = function(){
+    B(.95,.4,1.1,P.body,0,0,0);
+    B(.97,.42,.08,P.acc,0,0,-.35,false);
+    X(new THREE.Shape([V(-.36,.11),V(.36,.11),V(.36,-.02),V(.26,-.11),V(-.26,-.11),V(-.36,-.02)]),.45,P.metal,0,0,.55);
+    B(.5,.05,.4,P.dark,0,.01,.8,false);
+    rx(C(.15,.12,.3,P.dark,0,0,-.7,16,false), PI/2); cable(-1.45,1.2);
+  };
+  M['jack'] = function(){
+    rx(C(.16,.16,.9,P.body,0,0,0,24,false), PI/2);
+    T(.165,.02,PI*2,P.acc,0,0,.3);
+    rx(C(.07,.07,1.0,P.metal,0,0,.9,16,false), PI/2);
+    rx(C(.072,.072,.03,P.dark,0,0,1.0,16,false), PI/2); rx(C(.072,.072,.03,P.dark,0,0,1.2,16,false), PI/2);
+    rx(C(0,.07,.1,P.metal,0,0,1.45,16,false), PI/2);
+    rx(C(.1,.08,.3,P.dark,0,0,-.6,16,false), PI/2); cable(-1.35,1.2);
+  };
+  M['ethernet'] = function(){
+    B(.6,.48,.9,P.glass,0,0,.55);
+    for (var i = 0; i < 8; i++) B(.035,.012,.3,P.gold,-.245+i*.07,.245,.8,false);
+    B(.28,.04,.55,P.glass,0,.3,.35,false).rotation.x = -.2;
+    B(.62,.5,.5,P.accSoft,0,0,-.2);
+    rx(C(.13,.13,1.2,P.accSoft,0,0,-1.05,14,false), PI/2);
+  };
+  M['scheda-rete'] = function(){
+    B(2.4,.06,1.2,P.pcb,0,0,0);
+    B(.55,.08,.55,P.dark,.3,.07,-.05,false); B(.12,.01,.12,P.acc,.3,.115,-.05,false);
+    B(.25,.05,.15,P.dark,.95,.055,.3,false); B(.25,.05,.15,P.dark,.95,.055,-.3,false);
+    B(.05,1.0,1.3,P.metal,-1.25,.4,0);
+    B(.55,.42,.6,P.metal,-.95,.25,.1);
+    B(.02,.28,.4,P.dark,-1.28,.25,.1,false);
+    S(.035,P.acc,-1.28,.52,-.15); S(.035,P.accSoft,-1.28,.52,.35);
+    B(1.0,.06,.12,P.gold,.35,0,.66,false);
+  };
+  M['wifi'] = function(){
+    [.5,1,1.5].forEach(function(r){ T(r,.1,PI/2,P.acc,0,-.8,0).rotation.z = PI/4; });
+    S(.17,P.acc,0,-.8,0);
+    C(1.3,1.3,.06,P.body,0,-1.2,0,48);
+  };
+  M['bluetooth'] = function(){
+    var badge = C(.9,.9,.16,P.body,0,0,0,40); badge.rotation.x = PI/2; badge.scale.set(.72,1,1.15);
+    var pts = [[-.3,.3],[.3,-.3],[0,-.6],[0,.6],[.3,.3],[-.3,-.3]];
+    [.1,-.1].forEach(function(z){
+      for (var i = 0; i < pts.length-1; i++){
+        var a = pts[i], b = pts[i+1], dx = b[0]-a[0], dy = b[1]-a[1];
+        B(Math.hypot(dx,dy)+.09,.09,.05,P.acc,(a[0]+b[0])/2,(a[1]+b[1])/2,z,false).rotation.z = Math.atan2(dy,dx);
+      }
+    });
+  };
+  M['router'] = function(){
+    B(2.6,.35,1.6,P.body,0,0,0);
+    for (var i = 0; i < 6; i++) B(1.8,.012,.05,P.dark,0,.18,-.5+i*.2,false);
+    for (var j = 0; j < 5; j++) S(.045,P.acc,-.8+j*.4,0,.81);
+    B(2.4,.02,.012,P.accSoft,0,-.12,.805,false);
+    [-1,0,1].forEach(function(k){
+      C(.1,.1,.2,P.metal,k,.27,-.7,12,false);
+      C(.06,.05,1.5,P.dark,k+k*.14,1.1,-.7,12,false).rotation.z = -k*.18;
+    });
+  };
+  M._fallback = function(){ B(1,1,1,P.body,0,0,0); };
+
+  function famOf(el){ for (var i = 0; i < FAMS.length; i++) if (el && el.classList.contains(FAMS[i])) return FAMS[i]; return FAMS[0]; }
+  function build(key, fam){
+    P = pal[fam]; G = new THREE.Group();
+    (M[key] || M._fallback)();
+    var inner = G;
+    var sph = new THREE.Box3().setFromObject(inner).getBoundingSphere(new THREE.Sphere());
+    var k = 1.5 / (sph.radius || 1);
+    inner.scale.setScalar(k);
+    inner.position.copy(sph.center).multiplyScalar(-k);
+    var outer = new THREE.Group(); outer.add(inner);
+    return outer;
+  }
+  function dispose(obj){ obj.traverse(function(o){ if (o.geometry) o.geometry.dispose(); }); }
+
+  /* Scena della griglia: un solo canvas, una vista per ogni riquadro */
+  function lights(s){
+    s.add(new THREE.HemisphereLight(0xcfe0ff, 0x1a1e33, .9));
+    var d = new THREE.DirectionalLight(0xffffff, 1.1); d.position.set(3,5,4); s.add(d);
+    var d2 = new THREE.DirectionalLight(0x8fb4ff, .55); d2.position.set(-4,2,-3); s.add(d2);
+  }
+  var scene = new THREE.Scene(); lights(scene);
+  var camera = new THREE.PerspectiveCamera(32, 4/3, .1, 50);
+  camera.position.set(0,1.9,6); camera.lookAt(0,0,0);
+
+  var items = Array.prototype.map.call(document.querySelectorAll('.card'), function(card, i){
+    var v = card.querySelector('.viewer');
+    var m = build(v.getAttribute('data-model'), famOf(card.closest('section')));
+    m.rotation.y = .6 + i*.7; m.visible = false; scene.add(m);
+    return {el:v, model:m};
+  });
+
+  /* Scena della scheda di dettaglio, con rotazione a trascinamento */
+  var dlg = document.getElementById('sheet');
+  var dv = document.getElementById('sheet-viewer');
+  var c2 = document.createElement('canvas'); c2.className = 'gl-sheet';
+  var r2 = null;
+  try { r2 = new THREE.WebGLRenderer({canvas:c2, alpha:true, antialias:true}); } catch(e){}
+  var scene2 = new THREE.Scene(), cam2 = new THREE.PerspectiveCamera(30, 1, .1, 50);
+  var shown = null, shownKey = '', shownFam = '', drag = null, tiltX = 0;
+  if (r2){
+    r2.setPixelRatio(DPR); r2.setClearColor(0x000000, 0);
+    dv.appendChild(c2);
+    var hint = document.createElement('small'); hint.className = 'drag-hint'; hint.textContent = 'Trascina per ruotare'; dv.appendChild(hint);
+    lights(scene2);
+    cam2.position.set(0,1.6,5.6); cam2.lookAt(0,0,0);
+    c2.addEventListener('pointerdown', function(e){ drag = {x:e.clientX, y:e.clientY}; c2.setPointerCapture(e.pointerId); });
+    c2.addEventListener('pointermove', function(e){
+      if (!drag || !shown) return;
+      shown.rotation.y += (e.clientX - drag.x) * .01;
+      tiltX = Math.max(-.6, Math.min(.6, tiltX + (e.clientY - drag.y) * .006));
+      shown.rotation.x = tiltX;
+      drag = {x:e.clientX, y:e.clientY};
+    });
+    ['pointerup','pointercancel'].forEach(function(ev){ c2.addEventListener(ev, function(){ drag = null; }); });
+  }
+  function syncSheet(){
+    var key = dv.getAttribute('data-model') || '', fam = famOf(dlg);
+    if (key === shownKey && fam === shownFam) return;
+    if (shown){ scene2.remove(shown); dispose(shown); }
+    shown = build(key, fam); shown.rotation.y = .6; tiltX = 0;
+    scene2.add(shown); shownKey = key; shownFam = fam;
+  }
+
+  function fit(r, cnv){
+    var w = cnv.clientWidth, h = cnv.clientHeight;
+    if (cnv.width !== Math.round(w*DPR) || cnv.height !== Math.round(h*DPR)) r.setSize(w, h, false);
+  }
+
+  var last = performance.now();
+  function frame(now){
+    var dt = Math.min((now - last) / 1000, .1); last = now;
+    var spin = reduce ? 0 : dt * .5;
+    fit(renderer, canvas);
+    renderer.setScissorTest(false); renderer.clear();
+    if (!dlg.open){
+      var W = canvas.clientWidth, H = canvas.clientHeight;
+      renderer.setScissorTest(true);
+      items.forEach(function(it){
+        it.model.rotation.y += spin;
+        var r = it.el.getBoundingClientRect();
+        if (r.width === 0 || r.bottom < 0 || r.top > H || r.right < 0 || r.left > W) return;
+        renderer.setViewport(r.left, H - r.bottom, r.width, r.height);
+        renderer.setScissor(r.left, H - r.bottom, r.width, r.height);
+        camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
+        it.model.visible = true; renderer.render(scene, camera); it.model.visible = false;
+      });
+    } else if (r2){
+      syncSheet();
+      fit(r2, c2);
+      if (shown && !drag) shown.rotation.y += spin;
+      cam2.aspect = c2.clientWidth / (c2.clientHeight || 1); cam2.updateProjectionMatrix();
+      r2.render(scene2, cam2);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
